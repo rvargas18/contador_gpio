@@ -1,10 +1,11 @@
 import redis
 import cronus.beat as beat
 from datetime import datetime as dt
+import pines
 
 
 r = redis.Redis('localhost')
-pins = [3, 5, 7, 11, 13, 15, 19, 21, 23, 29]
+pins = pines.pins
 frecuencia = 1. / 60.    # en Hz
 i = 0
 beat.set_rate(frecuencia)

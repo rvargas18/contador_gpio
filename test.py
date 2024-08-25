@@ -1,18 +1,11 @@
 import RPi.GPIO as GPIO
 import redis
 import threading
-
-
-"""
-GPIO PINS
-
-BCM: 2, 3, 4, 17, 27, 22, 5, 6, 13, 19, 26, 14, 15, 18, 23, 24, 25, 12, 16, 20, 21
-BOARD: 3, 5, 7, 8, 10, 11, 12, 13, 15, 16, 18, 22, 29, 31, 32, 33, 35, 36, 37, 38, 40
-"""
+import pines
 
 # Setup GPIO
 GPIO.setmode(GPIO.BCM)
-pins = [17, 27, 22]
+pins = pines.pins
 for pin in pins:
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
 counters = {
