@@ -28,10 +28,19 @@ def count_pulses(index):
                 counters[index] += 1
                 rd.set('{}'.format('input_{}'.format(index)), counters[index])
 
-# Start Threads
-threads = []
-for pin in pins:
-    threads.append(threading.Thread(target=count_pulses, args=(pin,)))
-    threads[-1].start()
-
-
+try:
+    # Start Threads
+    threads = []
+    for pin in pins:
+        thread = threading.Thread(target=count_pulses, args=(pin,))
+        threads.append(thread)
+        thread.start()
+    # Keep program running
+    for thread in threads:
+        thread.join()
+except KeyboardInterrupt:
+    print("Programa interrumpido por el usuario.")
+finally:
+    # Cleanup
+    GPIO.cleanup()
+    print("GPIO limpiado y programa terminado.")
