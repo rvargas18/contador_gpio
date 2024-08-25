@@ -13,7 +13,7 @@ while beat.true():
     now = dt.now()
     print(now)
     for c in range(10):
-        count = r.get('in_{}'.format(c))
+        count = r.get('input_{}'.format(c))
         _count = int(count) if count else 0
         print('Count {}: {}'.format(c, _count))
     i += 1
