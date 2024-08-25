@@ -33,6 +33,8 @@ def count_pulses(index):
 
 # Main
 try:
+    print("Iniciando programa...")
+    print("Pines: {}".format(pins))
     # Start Threads
     threads = []
     for pin in pins:
