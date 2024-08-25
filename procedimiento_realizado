@@ -6,4 +6,7 @@ instalar git
 crear repositorio
 actualizar codigo
 vcgencmd measure_temp
+agregar pines a pines.py
+agregar pines a test.py
+agregar pines a read_redis.py
 
