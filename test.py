@@ -3,8 +3,7 @@ import redis
 import threading
 
 
-# Start Setup
-rd = redis.Redis('localhost')
+# Setup GPIO
 GPIO.setmode(GPIO.BOARD)
 pins = [3, 5, 7, 11, 13, 15, 19, 21, 23, 29]
 for pin in pins:
@@ -15,6 +14,10 @@ counters = {
 old_data = {
     pin: 0 for pin in pins
 }
+# Clean up redis input_
+rd = redis.Redis('localhost')
+for pin in pins:
+    rd.set('input_{}'.format(pin), 0)
 
 # Function to count pulses
 def count_pulses(index):
@@ -28,6 +31,7 @@ def count_pulses(index):
                 counters[index] += 1
                 rd.set('{}'.format('input_{}'.format(index)), counters[index])
 
+# Main
 try:
     # Start Threads
     threads = []
