@@ -16,6 +16,6 @@ while beat.true():
     for pin in pins:
         count = r.get('input_{}'.format(pin))
         _count = int(count) if count else 0
-        print('Count {}: {}'.format(pin, _count))
+        print('Count pin {}: {}'.format(pin, _count))
     i += 1
     beat.sleep()
