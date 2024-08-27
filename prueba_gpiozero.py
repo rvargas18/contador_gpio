@@ -15,7 +15,7 @@ def print_counter():
     print(f"Contador: {counter}")
 
 # Configura el botón con un tiempo de debounce de 0.2 segundos (ajustable según sea necesario)
-button = Button(pines.pins[0], bounce_time=0.2)
+button = Button(18, bounce_time=0.02)
 
 # Asigna las funciones a los eventos del botón
 button.when_pressed = increment_counter
