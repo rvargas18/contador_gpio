@@ -1,10 +1,11 @@
 instalar SO en raspberry (sin escritorio)
 instalr git (sudo apt update; sudo apt upgrade; sudo apt -y upgrade; sudo apt -y install git)
 instalar pyenv (manual en internet)(https://github.com/pyenv/pyenv?tab=readme-ov-file#unixmacos)
+generar ssh key, en raspberry (ssh-keygen)
+agregar la key a github, para poder clonar los repositorios
 crear un ambiente virtual 3.11
 instalar redis-server (sudo apt-get install redis-server)
 instalar paquetes python necesarios: rpi.gpio, redis==2.10.5, cronus
-instalar git
 crear repositorio
 actualizar codigo
 vcgencmd measure_temp
