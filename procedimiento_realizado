@@ -6,6 +6,7 @@ agregar la key a github, para poder clonar los repositorios
 instalar redis-server (sudo apt-get install redis-server)
 crear un ambiente virtual 3.11 (https://roylans.dev/entorno-virtual-en-python-pyenv)
 instalar paquetes python necesarios: rpi.gpio, redis==2.10.5, cronus
+instalar en python del sistema (sudo pip3 install redis --break-system-packages; sudo pip3 install cronus --break-system-packages)
 crear repositorio
 actualizar codigo
 vcgencmd measure_temp
