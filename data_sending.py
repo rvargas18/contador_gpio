@@ -23,7 +23,6 @@ def sending(_type, data, now):
     return message
 
 r = redis.Redis('localhost')
-devices = settings.devices
 
 frecuencia = 1. / 60.    # en Hz
 i = 0
@@ -34,6 +33,7 @@ while beat.true():
     print(now)
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
+    devices = settings.devices
     if status == b"True":
         for pin in settings.pines:
             # Obtine Datos desde Redis
