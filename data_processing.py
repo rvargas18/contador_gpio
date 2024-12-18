@@ -12,14 +12,14 @@ def sending(_type, data, now):
     Envia los datos de estado ON/OFF
     """
     port = 21678
-    sock = socket.create_connection(('localhost', port))
+    # sock = socket.create_connection(('localhost', port))
     now_utc = now.replace(tzinfo=tz.utc)
-    timestamp = now_utc.timestamp()
+    timestamp = int(now_utc.timestamp())
     message = "{} {} {}\n".format(_type, timestamp, data)
-    sock.sendall(message)
-    x = sock.recv(port)
-    sock.close()
-    return x
+    # sock.sendall(message)
+    # x = sock.recv(port)
+    # sock.close()
+    return message
 
 def zsf_osf(idx, count_t, delta):
     """
@@ -48,25 +48,31 @@ def zsf_osf(idx, count_t, delta):
 
 
 # Inicializa Datos de las máquinas
+def init_data():
+    ini = dt.now()
+    devices = settings.devices
+    for dev in devices:
+        devices[dev]['date_read'] = ini
+        count = r.get('counter_{}'.format(dev))
+        devices[dev]['count_t'] = int(count) if count else 0
+        devices[dev]['state'] = 0
+        r.set('state_{}'.format(dev), 0)
+    return devices
+
 r = redis.Redis('localhost')
-ini = dt.now()
-devices = settings.devices
-for dev in devices:
-    devices[dev]['date_read'] = ini
-    count = r.get('counter_{}'.format(dev))
-    devices[dev]['count_t'] = int(count) if count else 0
+devices = init_data()
 
 # Ciclos de Lectura
 frecuencia = 1.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
 while beat.true():
-    # print("\nCiclo #{}".format(i))
+    print("\nCiclo #{}".format(i))
     now = dt.now()
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
     if status == b"True":
-        for pin in settings.pines:
+        for pin in devices:
             devid = "{}".format(devices[pin]['devid']).zfill(4)
             delta_read = (now - devices[pin]['date_read']).total_seconds() if i != 0 else 1
             count = r.get('counter_{}'.format(pin))
@@ -83,21 +89,17 @@ while beat.true():
             if state != devices[pin]['state']:
                 sd_id = "{}".format(i).zfill(4)[:4]
                 data = "{} {} {}".format(devid, state, sd_id)
-                print("\tSending stamp")
-                print("\t\t{}".format(data))
-                # actualiza estado despues de enviar
-                devices[pin]['state'] = state
-                r.set('state_{}'.format(pin), state)
                 # Envia los datos
-                # try:
-                #     send = sending('stamp', data, now)
-                #     print(send)
-                #     # actualiza estado despues de enviar
-                #     devices[pin]['state'] = state
-                #     r.set('state_{}'.format(pin), state)
-                # except Exception as e:
-                #     print("[socket Error]: {}\nNo se han enviado datos".format(e))
+                try:
+                    send = sending('stamp', data, now)
+                    print(send)
+                    # actualiza estado despues de enviar
+                    devices[pin]['state'] = state
+                    r.set('state_{}'.format(pin), state)
+                except Exception as e:
+                    print("[socket Error]: {}\nNo se han enviado datos".format(e))
     else:
         print("[ERROR]: El script de lectura no esta en ejecucion")
+        devices = init_data()
     i += 1
     beat.sleep()
