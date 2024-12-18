@@ -1,44 +1,50 @@
 from gpiozero import Button
-from signal import pause
-import threading
-import cronus.beat as beat
 from datetime import datetime as dt
 import redis
+import pines
+import time
 
-# DB redis
+# Inicializa los contadores globales y en Base de Datos Redis
+counters = {
+    pin: 0 for pin in pines.pins
+}
 r = redis.Redis('localhost')
+for pin in pines.pins:
+    r.set('counter_{}'.format(pin), 0)
 
-# Inicializa el contador
-pin = 17
-counter = 0
-counter_2 = 0
-# Define una función para incrementar el contador
-def increment_counter():
-    global counter
-    counter += 1
-    r.set('counter_17', counter)
+# Configura el botón con un tiempo de debounce de 0.1 segundos
+buttons = {
+    pin: Button(pin, bounce_time=0.1) for pin in pines.pins
+}
 
-# Define una función para imprimir el contador
-# frecuencia = 1. / 60.    # en Hz
-# beat.set_rate(frecuencia)
+# Función para contar los pulsos
+def count_pulses(pin):
+    def increment_counter():
+        counters[pin] += 1
+        r.set('counter_{}'.format(pin), counters[pin])
 
-def print_counter():
-    global counter_2
-    while beat.true():
-        count_d = counter - counter_2
-        print(f"{dt.now()} | Contador: {counter} - {count_d}")
-        counter_2 = counter
-        beat.sleep()  # Espera 60 segundos antes de imprimir de nuevo
+    # Asignar la función al evento when_pressed
+    buttons[pin].when_pressed = increment_counter
 
-# Configura el botón con un tiempo de debounce de 0.2 segundos (ajustable según sea necesario)
-button = Button(pin, bounce_time=0)
+# Función para limpiar recursos
+def close_all():
+    for pin in buttons:
+        buttons[pin].close()
 
-# Asigna las funciones a los eventos del botón
-button.when_pressed = increment_counter
-#button.when_released = increment_counter
+# Main
+print("Iniciando programa...")
+print("Pines: {}".format(pines.pins))
 
-# Inicia el hilo para imprimir el contador
-# threading.Thread(target=print_counter, daemon=True).start()
+# Configurar eventos para todos los pines
+for pin in pines.pins:
+    count_pulses(pin)
 
-# Mantén el programa en ejecución
-pause()
+# Mantener el programa corriendo
+try:
+    while True:
+        time.sleep(1)  # Reducir el uso de CPU
+except KeyboardInterrupt:
+    print("Programa interrumpido por el usuario.")
+finally:
+    close_all()
+    print("GPIO limpiado y programa terminado.")
