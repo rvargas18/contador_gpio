@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from gpiozero import Button
 import redis
 import settings

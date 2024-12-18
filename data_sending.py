@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import redis
 import cronus.beat as beat
 from datetime import datetime as dt
@@ -11,7 +12,8 @@ def sending(_type, data, now):
     Envia los datos de estado ON/OFF
     """
     port = 21678
-    # sock = socket.create_connection(('localhost', port))
+    server = settings.server
+    # sock = socket.create_connection((server, port))
     now_utc = now.replace(tzinfo=tz.utc)
     timestamp = int(now_utc.timestamp())
     message = "{} {} {}\n".format(_type, timestamp, data)
