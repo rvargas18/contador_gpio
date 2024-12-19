@@ -9,7 +9,7 @@ import settings as settings
 # Funciones generales
 def sending(_type, data, now):
     """
-    Envia los datos de estado ON/OFF
+    Envia los datos de contadores
     """
     port = 21678
     server = settings.server
@@ -23,11 +23,15 @@ def sending(_type, data, now):
     # sock.close()
     return message
 
-r = redis.Redis('localhost')
 
+# MAIN
 print("Iniciando programa...")
 print(f"Pines a Enviar: {settings.pines}\n")
 
+# Inicializa redis
+r = redis.Redis('localhost', decode_responses=True)
+
+# Ciclo de envío cada 1 minuto
 frecuencia = 1. / 60.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
@@ -38,14 +42,14 @@ while beat.true():
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
     devices = settings.devices
-    if status == b"True":
+    if status == "True":
         for pin in settings.pines:
             # Obtine Datos desde Redis
             _count = r.get(f'counter_{pin}')
             count = int(_count) if _count else 0
             _state = r.get(f'state_{pin}')
             state = int(_state) if _state else 0
-            # Formatea data del mensaje
+            # Formatea los datos
             devid = f"{devices[pin]['devid']}".zfill(4)
             count = f"{int(count)}".zfill(13)
             tpo = "0".zfill(13)

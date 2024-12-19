@@ -27,6 +27,7 @@ def sending(_type, data, now):
 def zsf_osf(idx, count_t, delta):
     """
     Genera el estado ON/OFF a partir del conteo
+    y los tiempos ZSF y OSF
     """
     state = devices[idx]['state']
     if devices[idx]['zsf']:
@@ -49,8 +50,6 @@ def zsf_osf(idx, count_t, delta):
             devices[idx]['time_os'] = 0
     return state
 
-
-# Inicializa Datos de las máquinas
 def init_data():
     ini = dt.now()
     devices = settings.devices
@@ -62,13 +61,16 @@ def init_data():
         r.set(f'state_{dev}', 0)
     return devices
 
-r = redis.Redis('localhost')
 
+# MAIN
 print("Iniciando programa...")
 print(f"Pines Procesados: {settings.pines}\n")
 
+# Inicializa Datos de las máquinas
+r = redis.Redis('localhost', decode_responses=True)
 devices = init_data()
-# Ciclos de Lectura
+
+# Ciclos de Lectura cada 1 segundo
 frecuencia = 1.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
@@ -76,9 +78,9 @@ while beat.true():
     now = dt.now().replace(microsecond=0)
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
-    if status == b"True":
+    if status == "True":
         for pin in devices:
-            devid = f"{devices[pin]['devid']}".zfill(4)
+            # Obtiene datos de tiempo y contadores
             delta_read = (now - devices[pin]['date_read']).total_seconds() if i != 0 else 1
             count = r.get(f'counter_{pin}')
             count_t = int(count) if count else 0
@@ -90,8 +92,10 @@ while beat.true():
             state = zsf_osf(pin, count_t, delta_read)
             # actualiza acumulado
             devices[pin]['count_t'] = count_t
-            # revisa si debe enviar nuevo estado
+            # si estado es distinto al anterior envía
             if state != devices[pin]['state']:
+                # formatea datos
+                devid = f"{devices[pin]['devid']}".zfill(4)
                 sd_id = f"{i}".zfill(4)[:4]
                 data = f"{devid} {state} {sd_id}"
                 # Envia los datos

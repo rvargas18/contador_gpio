@@ -31,7 +31,7 @@ def close_all():
     for pin in buttons:
         buttons[pin].close()
 
-# Main
+# MAIN
 print("Iniciando programa...")
 print(f"Lectura en Pines: {settings.pines}")
 
