@@ -12,17 +12,18 @@ def sending(_type, data, now):
     """
     Envia los datos de estado ON/OFF
     """
+    buffer = 1024
     port = 21678
-    server = settings.server
+    server = f"{settings.server}"
     print(f"Enviando a {server} puerto {port}")
-    # sock = socket.create_connection((server, port))
+    sock = socket.create_connection((server, port))
     now_utc = now.replace(tzinfo=tz.utc)
     timestamp = int(now_utc.timestamp())
-    message = f"{_type} {timestamp} {data}\n"
-    # sock.sendall(message)
-    # x = sock.recv(port)
-    # sock.close()
-    return message
+    message = f"{_type} {timestamp} {data}\n".encode('utf-8')
+    sock.sendall(message)
+    resp = sock.recv(buffer)
+    sock.close()
+    return message, resp
 
 def zsf_osf(idx, count_t, delta):
     """
@@ -71,7 +72,7 @@ r = redis.Redis('localhost', decode_responses=True)
 devices = init_data()
 
 # Ciclos de Lectura cada 1 segundo
-frecuencia = 1.    # en Hz
+frecuencia = 1 / 2.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
 while beat.true():
@@ -100,7 +101,7 @@ while beat.true():
                 data = f"{devid} {state} {sd_id}"
                 # Envia los datos
                 try:
-                    send = sending('stamp', data, now)
+                    msg, send = sending('stamp', data, now)
                     print(send)
                     # actualiza estado despues de enviar
                     devices[pin]['state'] = state

@@ -4,24 +4,25 @@ import cronus.beat as beat
 from datetime import datetime as dt
 from datetime import timezone as tz
 import settings as settings
-
+import socket
 
 # Funciones generales
 def sending(_type, data, now):
     """
     Envia los datos de contadores
     """
+    buffer = 1024
     port = 21678
-    server = settings.server
+    server = f"{settings.server}"
     print(f"Enviando a {server} puerto {port}")
-    # sock = socket.create_connection((server, port))
+    sock = socket.create_connection((server, port))
     now_utc = now.replace(tzinfo=tz.utc)
     timestamp = int(now_utc.timestamp())
-    message = f"{_type} {timestamp} {data}\n"
-    # sock.sendall(message)
-    # x = sock.recv(port)
-    # sock.close()
-    return message
+    message = f"{_type} {timestamp} {data}\n".encode('utf-8')
+    sock.sendall(message)
+    resp = sock.recv(buffer)
+    sock.close()
+    return message, resp
 
 
 # MAIN
@@ -57,7 +58,7 @@ while beat.true():
             data = f"{devid} {state} {count} {tpo} {sd_id}"
             # Envia datos
             try:
-                send = sending('update', data, now)
+                msg, send = sending('update', data, now)
                 print(send)
             except Exception as e:
                 print(f"[socket Error]: {e}\nNo se han enviado datos")
