@@ -32,7 +32,7 @@ def close_all():
         buttons[pin].close()
 
 # MAIN
-print("Iniciando programa...")
+print("\nIniciando programa...")
 print(f"Lectura en Pines: {settings.pines}")
 
 # Configurar eventos para todos los pines

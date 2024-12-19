@@ -63,7 +63,7 @@ def init_data():
 
 
 # MAIN
-print("Iniciando programa...")
+print("\nIniciando programa...")
 print(f"Pines Procesados: {settings.pines}\n")
 
 # Inicializa Datos de las máquinas

@@ -25,8 +25,8 @@ def sending(_type, data, now):
 
 
 # MAIN
-print("Iniciando programa...")
-print(f"Pines a Enviar: {settings.pines}\n")
+print("\nIniciando programa...")
+print(f"Pines a Enviar: {settings.pines}")
 
 # Inicializa redis
 r = redis.Redis('localhost', decode_responses=True)
