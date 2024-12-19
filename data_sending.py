@@ -5,8 +5,13 @@ from datetime import datetime as dt
 from datetime import timezone as tz
 import settings as settings
 import socket
+import threading
+import queue
 
-# Funciones generales
+# Cola para el envío de datos
+send_queue = queue.Queue()
+
+# Función de envío de datos
 def sending(_type, data, now):
     """
     Envia los datos de contadores
@@ -24,12 +29,34 @@ def sending(_type, data, now):
     sock.close()
     return message, resp
 
+# Hilo para procesar la cola de envío
+def sending_worker():
+    """
+    Hilo que procesa los datos de la cola para enviarlos.
+    """
+    while True:
+        try:
+            # Obtiene datos de la cola
+            _type, data, now = send_queue.get()
+            if _type is None:  # Señal para detener el hilo
+                break
+            # Llama a la función de envío
+            msg, resp = sending(_type, data, now)
+            print(f"Respuesta: {resp}")
+        except Exception as e:
+            print(f"[socket Error]: {e}\nNo se han enviado datos")
+        finally:
+            send_queue.task_done()
+
+# Inicia el hilo de envío
+thread = threading.Thread(target=sending_worker, daemon=True)
+thread.start()
 
 # MAIN
 print("\nIniciando programa...")
 print(f"Pines a Enviar: {settings.pines}")
 
-# Inicializa redis
+# Inicializa Redis
 r = redis.Redis('localhost', decode_responses=True)
 
 # Ciclo de envío cada 1 minuto
@@ -40,12 +67,12 @@ while beat.true():
     print(f"\nCiclo #{i}")
     now = dt.now().replace(microsecond=0)
     print(now)
-    # verifica que el proceso de lectura esté en ejecución
+    # Verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
     devices = settings.devices
     if status == "True":
         for pin in settings.pines:
-            # Obtine Datos desde Redis
+            # Obtiene Datos desde Redis
             _count = r.get(f'counter_{pin}')
             count = int(_count) if _count else 0
             _state = r.get(f'state_{pin}')
@@ -56,13 +83,13 @@ while beat.true():
             tpo = "0".zfill(13)
             sd_id = f"{i}".zfill(4)[:4]
             data = f"{devid} {state} {count} {tpo} {sd_id}"
-            # Envia datos
-            try:
-                msg, send = sending('update', data, now)
-                print(send)
-            except Exception as e:
-                print(f"[socket Error]: {e}\nNo se han enviado datos")
+            # Coloca los datos en la cola
+            send_queue.put(('update', data, now))
     else:
-        print("[ERROR]: El script de lectura no esta en ejecucion")
+        print("[ERROR]: El script de lectura no está en ejecución")
     i += 1
     beat.sleep()
+
+# Finaliza el hilo al terminar el programa
+send_queue.put((None, None, None))
+thread.join()
