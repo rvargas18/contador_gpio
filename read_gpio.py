@@ -10,18 +10,18 @@ counters = {
 }
 r = redis.Redis('localhost')
 for pin in settings.pines:
-    r.set('counter_{}'.format(pin), 0)
+    r.set(f'counter_{pin}', 0)
 
-# Configura el botón con un tiempo de debounce de 0.1 segundos
+# Configura el botón con un tiempo de debounce de 0 segundos
 buttons = {
-    pin: Button(pin, bounce_time=0.1) for pin in settings.pines
+    pin: Button(pin, bounce_time=0) for pin in settings.pines
 }
 
 # Función para contar los pulsos
 def count_pulses(pin):
     def increment_counter():
         counters[pin] += 1
-        r.set('counter_{}'.format(pin), counters[pin])
+        r.set(f'counter_{pin}', counters[pin])
 
     # Asignar la función al evento when_pressed
     buttons[pin].when_pressed = increment_counter
@@ -33,7 +33,7 @@ def close_all():
 
 # Main
 print("Iniciando programa...")
-print("Pines: {}".format(settings.pines))
+print(f"Lectura en Pines: {settings.pines}")
 
 # Configurar eventos para todos los pines
 for pin in settings.pines:

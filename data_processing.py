@@ -14,10 +14,11 @@ def sending(_type, data, now):
     """
     port = 21678
     server = settings.server
+    print(f"Enviando a {server} puerto {port}")
     # sock = socket.create_connection((server, port))
     now_utc = now.replace(tzinfo=tz.utc)
     timestamp = int(now_utc.timestamp())
-    message = "{} {} {}\n".format(_type, timestamp, data)
+    message = f"{_type} {timestamp} {data}\n"
     # sock.sendall(message)
     # x = sock.recv(port)
     # sock.close()
@@ -55,29 +56,31 @@ def init_data():
     devices = settings.devices
     for dev in devices:
         devices[dev]['date_read'] = ini
-        count = r.get('counter_{}'.format(dev))
+        count = r.get(f'counter_{dev}')
         devices[dev]['count_t'] = int(count) if count else 0
         devices[dev]['state'] = 0
-        r.set('state_{}'.format(dev), 0)
+        r.set(f'state_{dev}', 0)
     return devices
 
 r = redis.Redis('localhost')
-devices = init_data()
 
+print("Iniciando programa...")
+print(f"Pines Procesados: {settings.pines}\n")
+
+devices = init_data()
 # Ciclos de Lectura
 frecuencia = 1.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
 while beat.true():
-    print("\nCiclo #{}".format(i))
-    now = dt.now()
+    now = dt.now().replace(microsecond=0)
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
     if status == b"True":
         for pin in devices:
-            devid = "{}".format(devices[pin]['devid']).zfill(4)
+            devid = f"{devices[pin]['devid']}".zfill(4)
             delta_read = (now - devices[pin]['date_read']).total_seconds() if i != 0 else 1
-            count = r.get('counter_{}'.format(pin))
+            count = r.get(f'counter_{pin}')
             count_t = int(count) if count else 0
             if count_t < devices[pin]['count_t']:
                 devices[pin]['count_t'] = count_t
@@ -89,17 +92,17 @@ while beat.true():
             devices[pin]['count_t'] = count_t
             # revisa si debe enviar nuevo estado
             if state != devices[pin]['state']:
-                sd_id = "{}".format(i).zfill(4)[:4]
-                data = "{} {} {}".format(devid, state, sd_id)
+                sd_id = f"{i}".zfill(4)[:4]
+                data = f"{devid} {state} {sd_id}"
                 # Envia los datos
                 try:
                     send = sending('stamp', data, now)
                     print(send)
                     # actualiza estado despues de enviar
                     devices[pin]['state'] = state
-                    r.set('state_{}'.format(pin), state)
+                    r.set(f'state_{pin}', state)
                 except Exception as e:
-                    print("[socket Error]: {}\nNo se han enviado datos".format(e))
+                    print(f"[socket Error]: {e}\nNo se han enviado datos")
     else:
         print("[ERROR]: El script de lectura no esta en ejecucion")
         devices = init_data()
