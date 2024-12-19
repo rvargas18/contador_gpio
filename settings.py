@@ -3,7 +3,7 @@ import redis
 r = redis.Redis('localhost', decode_responses=True)
 
 """
-Datos
+Seteo de Datos
 """
 
 """
@@ -19,7 +19,7 @@ BCM: 2, 3, 4, 17, 27, 22, 5, 6, 13, 19, 26, 14, 15, 18, 23, 24, 25, 12, 16, 20, 
 BOARD: 3, 5, 7, 8, 10, 11, 12, 13, 15, 16, 18, 22, 29, 31, 32, 33, 35, 36, 37, 38, 40
 """
 _r_pines = r.get('pines')
-# Si no existe la llave 'pines' en redis asigna valor por defecto
+# Si no existe la llave 'pines' en redis asigna valor por defecto, los 8 pines
 r_pines = _r_pines if _r_pines else "5, 6, 13, 16, 19, 20, 21, 26"
 pines = [int(pin) for pin in r_pines.split(",")]
 
