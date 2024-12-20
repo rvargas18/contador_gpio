@@ -4,50 +4,12 @@ import cronus.beat as beat
 from datetime import datetime as dt
 from datetime import timezone as tz
 import settings as settings
-import socket
-import threading
-import queue
 
-# Cola para el envío de datos
-send_queue = queue.Queue()
 
+# Configura Redis
+r = redis.Redis('localhost', decode_responses=True)
 
 # Funciones generales
-def sending(_type, data, now):
-    """
-    Envia los datos de estado ON/OFF
-    """
-    buffer = 1024
-    port = 21678
-    server = f"{settings.server}"
-    print(f"Enviando a {server} puerto {port}")
-    sock = socket.create_connection((server, port))
-    now_utc = now.replace(tzinfo=tz.utc)
-    timestamp = int(now_utc.timestamp())
-    message = f"{_type} {timestamp} {data}\n".encode('utf-8')
-    sock.sendall(message)
-    resp = sock.recv(buffer)
-    sock.close()
-    return message, resp
-
-def sending_worker():
-    """
-    Hilo que procesa los datos de la cola para enviarlos.
-    """
-    while True:
-        try:
-            # Obtiene datos de la cola
-            _type, data, now = send_queue.get()
-            if _type is None:  # Señal para detener el hilo
-                break
-            # Llama a la función de envío
-            msg, resp = sending(_type, data, now)
-            print(f"Respuesta: {resp}")
-        except Exception as e:
-            print(f"[socket Error]: {e}\nNo se han enviado datos")
-        finally:
-            send_queue.task_done()
-
 def zsf_osf(idx, count_t, delta):
     """
     Genera el estado ON/OFF a partir del conteo
@@ -85,28 +47,28 @@ def init_data():
         r.set(f'state_{dev}', 0)
     return devices
 
-# Inicia el hilo de envío
-thread = threading.Thread(target=sending_worker, daemon=True)
-thread.start()
-
 
 # MAIN
 print("\nIniciando programa...")
 print(f"Pines Procesados: {settings.pines}\n")
 
 # Inicializa Datos de las máquinas
-r = redis.Redis('localhost', decode_responses=True)
 devices = init_data()
+
+# Variables de control
+start_time = dt.now().replace(microsecond=0)
+seconds_elapsed = 0
 
 # Ciclos de Lectura cada 1 segundo
 frecuencia = 1.    # en Hz
 i = 0
 beat.set_rate(frecuencia)
 while beat.true():
-    now = dt.now().replace(microsecond=0)
     # verifica que el proceso de lectura esté en ejecución
     status = r.get('read_execution')
     if status == "True":
+        now = dt.now().replace(microsecond=0)
+        # Verifica Estado
         for pin in devices:
             # Obtiene datos de tiempo y contadores
             delta_read = (now - devices[pin]['date_read']).total_seconds() if i != 0 else 1
@@ -126,17 +88,36 @@ while beat.true():
                 devid = f"{devices[pin]['devid']}".zfill(4)
                 sd_id = f"{i}".zfill(4)[:4]
                 data = f"{devid} {state} {sd_id}"
-                # Coloca los datos en la cola de envío
-                send_queue.put(('stamp', data, now))
-                # actualiza estado despues de enviar
+                # Guarda los datos en la cola persistente
+                message = f"stamp|{data}|{int(now.timestamp())}"
+                r.rpush('messages', message)
+                print(message)
+                # actualiza estado
                 devices[pin]['state'] = state
                 r.set(f'state_{pin}', state)
+        # Cada 60 segundos, inserta un mesaje de conteo
+        seconds_elapsed = (now - start_time).seconds
+        if seconds_elapsed >= 60:
+            print(f"\n{now}")
+            for pin in devices:
+                # Obtiene Datos desde Redis
+                _count = r.get(f'counter_{pin}')
+                count = int(_count) if _count else 0
+                _state = r.get(f'state_{pin}')
+                state = int(_state) if _state else 0
+                # Formatea los datos
+                devid = f"{devices[pin]['devid']}".zfill(4)
+                count = f"{int(count)}".zfill(13)
+                tpo = "0".zfill(13)
+                sd_id = f"{i}".zfill(4)[:4]
+                data = f"{devid} {state} {count} {tpo} {sd_id}"
+                # Guarda los datos en la cola persistente
+                message = f"update|{data}|{int(now.timestamp())}"
+                r.rpush('messages', message)
+                print(message)
+            start_time = now  # Reinicia el contador de tiempo
+        i += 1
     else:
         print("[ERROR]: El script de lectura no esta en ejecucion")
         devices = init_data()
-    i += 1
     beat.sleep()
-
-# Finaliza el hilo al terminar el programa
-send_queue.put((None, None, None))
-thread.join()
