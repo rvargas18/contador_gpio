@@ -2,7 +2,6 @@
 import redis
 import cronus.beat as beat
 from datetime import datetime as dt
-from datetime import timezone as tz
 import settings as settings
 
 

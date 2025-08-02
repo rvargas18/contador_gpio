@@ -43,7 +43,7 @@ def sending_worker():
                 msg, resp = sending(_type, data, now)
                 print(f"Mensaje: {msg} -> Respuesta: {resp}")
                 if b'UPDATED' not in resp and b'STAMPED' not in resp:
-                    print(f"Respuesta no Valida. Reinsertando el mensaje en la cola...")
+                    print("Respuesta no Valida. Reinsertando el mensaje en la cola...")
                     # Reinsertar el mensaje al inicio de la cola
                     r.lpush('messages', queued_message)
                     retry_delay = min(2 * retries, 60)
@@ -56,7 +56,7 @@ def sending_worker():
                 time.sleep(1)
         except Exception as e:
             print(f"[Error general]: {e}")
-            print(f"Reinsertando el mensaje en la cola...")
+            print("Reinsertando el mensaje en la cola...")
             # Reinsertar el mensaje al inicio de la cola
             r.lpush('messages', queued_message)
             # Espera antes de reintentar
